@@ -5,3 +5,10 @@ div.prompt.empty.docutils.container{
 .wy-nav-content {
     min-width: 90%;
 }
+
+/* Let text wrap in tables that opt in with ":class: wrap". The theme sets
+   white-space: nowrap on all table cells, which hides long cells. */
+.wy-table-responsive table.wrap td,
+.wy-table-responsive table.wrap th {
+    white-space: normal;
+}
