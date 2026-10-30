@@ -234,12 +234,15 @@ class Thicket(GraphFrame):
             th.metadata = pd.DataFrame.from_dict(temp_meta, orient="index")
             th.metadata.index.set_names(th.profile_idx_name, inplace=True)
 
-            # Add profile to dataframe index
-            th.dataframe[th.profile_idx_name] = hash_arg
+            # Add profile to dataframe index. Build a new DataFrame rather than
+            # modifying gf.dataframe, which th.dataframe refers to.
             index_names = list(th.dataframe.index.names)
             index_names.insert(1, th.profile_idx_name)
-            th.dataframe.reset_index(inplace=True)
-            th.dataframe.set_index(index_names, inplace=True)
+            th.dataframe = (
+                th.dataframe.assign(**{th.profile_idx_name: hash_arg})
+                .reset_index()
+                .set_index(index_names)
+            )
 
         return th
 
@@ -271,12 +274,14 @@ class Thicket(GraphFrame):
 
         # Use iter_column to set iteration dataframe index then delete it
         iteration = int(th.dataframe[iter_column].dropna().max())
-        th.dataframe.drop(columns=[iter_column], inplace=True)
-        th.dataframe["iteration"] = iteration
         index_names = list(th.dataframe.index.names)
         index_names.insert(1, "iteration")
-        th.dataframe.reset_index(inplace=True)
-        th.dataframe.set_index(index_names, inplace=True)
+        th.dataframe = (
+            th.dataframe.drop(columns=[iter_column])
+            .assign(iteration=iteration)
+            .reset_index()
+            .set_index(index_names)
+        )
 
         return th
 
@@ -585,15 +590,17 @@ class Thicket(GraphFrame):
         """Read in a single Caliper .cali file that has timeseries records
         gets split into a list of graphframes by hatchet.
 
+        Nodes without an observation in a time step have NaN metric values.
+
         Arguments:
-            filename_or_stream (str or file-like): name of a Caliper timeseries output file in
-                `.cali` format, or an open file object to read one
+            filename_or_caliperreader (str or CaliperReader): name of a Caliper
+                timeseries output file in `.cali` format, or a CaliperReader object
             level (str): level to split the timeseries, default "loop.start_iteration"
             intersection (bool): whether to perform intersection or union (default)
         """
         # if we are reading a timeseries file we will expect a list back from the reader
         ens_list = []
-        gf_list = GraphFrame.from_timeseries(filename_or_caliperreader)
+        gf_list = GraphFrame.from_timeseries(filename_or_caliperreader, level=level)
         for gf in gf_list:
             ens_list.append(Thicket.thicketize_timeseries_graphframe(gf, level))
 
@@ -912,7 +919,7 @@ class Thicket(GraphFrame):
 
         if "metadata" in thicket_dict:
             mf = pd.DataFrame(thicket_dict["metadata"])
-            mf.set_index(mf[th.profile_idx_name], inplace=True)
+            mf = mf.set_index(mf[th.profile_idx_name])
             if th.profile_idx_name in mf.columns:
                 mf = mf.drop(columns=[th.profile_idx_name])
             th.metadata = mf
@@ -1062,7 +1069,7 @@ class Thicket(GraphFrame):
             if mkey in self.dataframe.columns:
                 # Drop column to overwrite, otherwise warn and return
                 if overwrite:
-                    self.dataframe.drop(mkey, axis=1, inplace=True)
+                    self.dataframe = self.dataframe.drop(mkey, axis=1)
                 else:
                     warnings.warn(
                         "Column "
@@ -1078,7 +1085,7 @@ class Thicket(GraphFrame):
 
         # Drop column
         if drop:
-            self.metadata.drop(metadata_columns, axis=1, inplace=True)
+            self.metadata = self.metadata.drop(metadata_columns, axis=1)
 
     def squash(self, update_inc_cols=True, new_statsframe=True):
         """Rewrite the Graph to include only nodes present in the performance
@@ -1099,10 +1106,10 @@ class Thicket(GraphFrame):
         # Hatchet's squash code
         #####
         index_names = self.dataframe.index.names
-        self.dataframe.reset_index(inplace=True)
+        df = self.dataframe.reset_index()
 
         # create new nodes for each unique node in the old dataframe
-        old_to_new = {n: n.copy() for n in set(self.dataframe["node"])}
+        old_to_new = {n: n.copy() for n in set(df["node"])}
         for i in old_to_new:
             old_to_new[i]._hatchet_nid = i._hatchet_nid
 
@@ -1155,7 +1162,6 @@ class Thicket(GraphFrame):
         graph.enumerate_traverse()
 
         # reindex new dataframe with new nodes
-        df = self.dataframe.copy()
         df["node"] = df["node"].apply(lambda x: old_to_new[x])
 
         # at this point, the graph is potentially invalid, as some nodes
@@ -1163,8 +1169,7 @@ class Thicket(GraphFrame):
         merges = graph.normalize()
         df["node"] = df["node"].apply(lambda n: merges.get(n, n))
 
-        self.dataframe.set_index(index_names, inplace=True)
-        df.set_index(index_names, inplace=True)
+        df = df.set_index(index_names)
         # create dict that stores aggregation function for each column
         agg_dict = {}
         for col in df.columns.tolist():
@@ -1178,8 +1183,7 @@ class Thicket(GraphFrame):
                 agg_dict[col] = lambda x: x.iloc[0]
 
         # perform a groupby to merge nodes with the same callpath
-        agg_df = df.groupby(index_names).agg(agg_dict)
-        agg_df.sort_index(inplace=True)
+        agg_df = df.groupby(index_names).agg(agg_dict).sort_index()
 
         #####
         # Thicket's squash code
@@ -1230,7 +1234,10 @@ class Thicket(GraphFrame):
     def copy(self):
         """Return a partially shallow copy of the Thicket.
 
-        See GraphFrame.copy() for more details
+        See GraphFrame.copy() for more details. The graph, and the Node objects in
+        the DataFrame indices, are shared with self. The DataFrames are shallow
+        copies, which pandas Copy-on-Write copies lazily: modifying the data of
+        one Thicket never changes the data of the other.
 
         Arguments:
             self (Thicket): object to make a copy of
@@ -1503,10 +1510,9 @@ class Thicket(GraphFrame):
             tk_copy.graph = tk_copy.statsframe.graph
 
             # Modify the performance data table
-            df = tk_copy.statsframe.dataframe
+            df = tk_copy.statsframe.dataframe.copy()
             df[idx_name] = tk_id
-            df.set_index(idx_name, inplace=True, append=True)
-            tk_copy.dataframe = df
+            tk_copy.dataframe = df.set_index(idx_name, append=True)
 
             # Adjust profile and profile_mapping
             tk_copy.profile = [tk_id]
@@ -1515,12 +1521,12 @@ class Thicket(GraphFrame):
 
             # Modify metadata dataframe
             tk_copy.metadata[idx_name] = tk_id
-            tk_copy.metadata.set_index(idx_name, inplace=True)
+            tk_copy.metadata = tk_copy.metadata.set_index(idx_name)
 
             def _agg_to_set(obj):
                 """Aggregate values in 'obj' into a set to remove duplicates."""
-                if len(obj) <= 1:
-                    return obj
+                if len(obj) == 1:
+                    return obj.iloc[0]
                 else:
                     if isinstance(obj.iloc[0], list) or isinstance(obj.iloc[0], set):
                         _set = set(tuple(i) for i in obj)
@@ -1617,11 +1623,9 @@ class Thicket(GraphFrame):
             return tkc
         else:
             # Check for padded perfdata
-            if self.dataframe["name"].isnull().any():
-                # Row that didn't exist will contain "None" in the name column.
-                query = Query().match(
-                    ".", lambda df: df["name"].apply(lambda n: n is not None).all()
-                )
+            if self.dataframe["name"].isna().any():
+                # Rows that didn't exist contain a missing value in the name column.
+                query = Query().match(".", lambda df: df["name"].notna().all())
             else:
                 # If perfdata not padded
                 query = Query().match(".", lambda df: len(df) == len(self.profile))
@@ -1753,9 +1757,8 @@ class Thicket(GraphFrame):
                     type(query_obj)
                 )
             )
-        dframe_copy = self.dataframe.copy()
         index_names = self.dataframe.index.names
-        dframe_copy.reset_index(inplace=True)
+        dframe_copy = self.dataframe.reset_index()
         query = (
             local_query_obj
             if not is_old_style_query(query_obj)
@@ -1765,7 +1768,7 @@ class Thicket(GraphFrame):
         filtered_df = dframe_copy.loc[dframe_copy["node"].isin(query_matches)]
         if filtered_df.shape[0] == 0:
             raise EmptyQuery("The provided query would have produced an empty Thicket.")
-        filtered_df.set_index(index_names, inplace=True)
+        filtered_df = filtered_df.set_index(index_names)
 
         filtered_th = self.deepcopy()
         filtered_th.dataframe = filtered_df
@@ -1799,9 +1802,8 @@ class Thicket(GraphFrame):
                     type(query_obj)
                 )
             )
-        sframe_copy = self.statsframe.dataframe.copy()
         sf_index_names = self.statsframe.dataframe.index.names
-        sframe_copy.reset_index(inplace=True)
+        sframe_copy = self.statsframe.dataframe.reset_index()
 
         query = (
             local_query_obj
@@ -1817,13 +1819,12 @@ class Thicket(GraphFrame):
             raise EmptyQuery("The provided query would have produced an empty Thicket.")
 
         df_index_names = self.dataframe.index.names
-        dframe_copy = self.dataframe.copy()
-        dframe_copy.reset_index(inplace=True)
+        dframe_copy = self.dataframe.reset_index()
 
         filtered_df = dframe_copy[dframe_copy["node"].isin(query_matches)]
-        filtered_df.set_index(df_index_names, inplace=True)
+        filtered_df = filtered_df.set_index(df_index_names)
 
-        filtered_sf_df.set_index(sf_index_names, inplace=True)
+        filtered_sf_df = filtered_sf_df.set_index(sf_index_names)
 
         filtered_th = Thicket(
             graph=self.graph,

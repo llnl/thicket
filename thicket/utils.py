@@ -91,12 +91,12 @@ def validate_dataframe(df):
             i += 1
 
     def _validate_name_column(df):
-        """Check if all of the values in a node's name column are either its name or None."""
+        """Check if all of the values in a node's name column are either its name or missing."""
         for node in set(df.index.get_level_values("node")):
             names = set(df.loc[node]["name"].tolist())
             node_name = node.frame["name"]
             for name in names:
-                if name != node_name and name is not None:
+                if name != node_name and not pd.isna(name):
                     raise InvalidNameError(
                         f"Value in the Thicket.dataframe's 'name' column is not valid. {name} != {node_name}"
                     )
@@ -262,7 +262,7 @@ def validate_nodes(tk):
 
 
 def _fill_perfdata(df):
-    """Create full index for DataFrame and fill created rows with NaN's or Nones where applicable.
+    """Create full index for DataFrame and fill created rows with missing values (NaN).
 
     Arguments:
         df (DataFrame): DataFrame to fill missing rows in
@@ -274,15 +274,12 @@ def _fill_perfdata(df):
     try:
         # Value used to fill new rows
         fill_value = np.nan
-        # Fill missing rows in dataframe with NaN's
+        # Fill missing rows in dataframe with NaN's. String columns keep their
+        # dtype, which also uses NaN as its missing value.
         new_df = new_df.reindex(
             pd.MultiIndex.from_product(new_df.index.levels),
             fill_value=fill_value,
         )
-        # Replace "NaN" with "None" in columns of string type
-        for col in new_df.columns:
-            if pd.api.types.is_string_dtype(new_df[col].dtype):
-                new_df[col] = new_df[col].replace({fill_value: None})
     except ValueError as e:
         estr = str(e)
         if estr == "cannot handle a non-unique multi-index!":

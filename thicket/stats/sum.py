@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from ..utils import verify_thicket_structures
 from .stats_utils import cache_stats_op
 
@@ -36,7 +34,7 @@ def sum(thicket, columns=None):
 
     # thicket object without columnar index
     if thicket.dataframe.columns.nlevels == 1:
-        df = thicket.dataframe[columns].reset_index().groupby("node").agg(np.sum)
+        df = thicket.dataframe[columns].reset_index().groupby("node").agg("sum")
         for column in columns:
             output_column_names.append(column + "_sum")
             thicket.statsframe.dataframe[column + "_sum"] = df[column]
@@ -48,7 +46,7 @@ def sum(thicket, columns=None):
                 thicket.statsframe.inc_metrics.append(column + "_sum")
     # columnar joined thicket object
     else:
-        df = thicket.dataframe[columns].reset_index(level=1).groupby("node").agg(np.sum)
+        df = thicket.dataframe[columns].reset_index(level=1).groupby("node").agg("sum")
         for idx, column in columns:
             output_column_names.append((idx, column + "_sum"))
             thicket.statsframe.dataframe[(idx, column + "_sum")] = df[(idx, column)]

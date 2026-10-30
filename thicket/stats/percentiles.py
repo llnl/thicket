@@ -67,7 +67,7 @@ def percentiles(thicket, columns=None, percentiles=[0.25, 0.50, 0.75]):
         df = df_num.reset_index().groupby("node").quantile(percentiles)
         for column in columns:
             calculated_percentiles = []
-            for node in pd.unique(df.reset_index()["node"].tolist()):
+            for node in pd.unique(df.reset_index()["node"]):
                 calculated_percentiles.append(list(df.loc[node][column]))
 
             for index, percentile in enumerate(percentiles):
@@ -99,7 +99,7 @@ def percentiles(thicket, columns=None, percentiles=[0.25, 0.50, 0.75]):
             calculated_percentiles = []
 
             # Get all the calculated values into a list for each node
-            for node in pd.unique(df.reset_index()["node"].tolist()):
+            for node in pd.unique(df.reset_index()["node"]):
                 calculated_percentiles.append(list(df.loc[node][(idx_level, column)]))
 
             # Go through each of the percentiles, and make them it's own column

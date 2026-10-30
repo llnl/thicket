@@ -12,6 +12,14 @@ from ..utils import verify_thicket_structures
 from .stats_utils import cache_stats_op
 
 
+def _column_key(df, name):
+    """Key for a new column 'name' in 'df': for MultiIndex columns, a full-length
+    tuple ('name', '', ...), as pandas no longer pads shorter keys."""
+    if df.columns.nlevels > 1 and not isinstance(name, tuple):
+        return (name,) + ("",) * (df.columns.nlevels - 1)
+    return name
+
+
 def _calc_bhattacharyya(means_1, means_2, stds_1, stds_2, num_nodes):
     results = []
 
@@ -102,11 +110,11 @@ def bhattacharyya_distance(thicket, columns=None, output_column_name=None):
     mean_columns = th.stats.mean(thicket, columns)
     std_columns = th.stats.std(thicket, columns)
 
-    means_target1 = thicket.statsframe.dataframe[mean_columns[0]]
-    means_target2 = thicket.statsframe.dataframe[mean_columns[1]]
+    means_target1 = thicket.statsframe.dataframe[mean_columns[0]].to_numpy()
+    means_target2 = thicket.statsframe.dataframe[mean_columns[1]].to_numpy()
 
-    stds_target1 = thicket.statsframe.dataframe[std_columns[0]]
-    stds_target2 = thicket.statsframe.dataframe[std_columns[1]]
+    stds_target1 = thicket.statsframe.dataframe[std_columns[0]].to_numpy()
+    stds_target2 = thicket.statsframe.dataframe[std_columns[1]].to_numpy()
 
     result = _calc_bhattacharyya(
         means_target1, means_target2, stds_target1, stds_target2, num_nodes
@@ -130,7 +138,9 @@ def bhattacharyya_distance(thicket, columns=None, output_column_name=None):
     else:
         stats_frame_column_name = output_column_name
 
-    thicket.statsframe.dataframe[stats_frame_column_name] = result
+    thicket.statsframe.dataframe[
+        _column_key(thicket.statsframe.dataframe, stats_frame_column_name)
+    ] = result
     thicket.statsframe.dataframe = thicket.statsframe.dataframe.sort_index(axis=1)
 
     return [stats_frame_column_name]
@@ -186,11 +196,11 @@ def hellinger_distance(thicket, columns=None, output_column_name=None):
     mean_columns = th.stats.mean(thicket, columns)
     std_columns = th.stats.std(thicket, columns)
 
-    means_target1 = thicket.statsframe.dataframe[mean_columns[0]]
-    means_target2 = thicket.statsframe.dataframe[mean_columns[1]]
+    means_target1 = thicket.statsframe.dataframe[mean_columns[0]].to_numpy()
+    means_target2 = thicket.statsframe.dataframe[mean_columns[1]].to_numpy()
 
-    stds_target1 = thicket.statsframe.dataframe[std_columns[0]]
-    stds_target2 = thicket.statsframe.dataframe[std_columns[1]]
+    stds_target1 = thicket.statsframe.dataframe[std_columns[0]].to_numpy()
+    stds_target2 = thicket.statsframe.dataframe[std_columns[1]].to_numpy()
 
     result = _calc_hellinger(
         means_target1, means_target2, stds_target1, stds_target2, num_nodes
@@ -214,7 +224,9 @@ def hellinger_distance(thicket, columns=None, output_column_name=None):
     else:
         stats_frame_column_name = output_column_name
 
-    thicket.statsframe.dataframe[stats_frame_column_name] = result
+    thicket.statsframe.dataframe[
+        _column_key(thicket.statsframe.dataframe, stats_frame_column_name)
+    ] = result
     thicket.statsframe.dataframe = thicket.statsframe.dataframe.sort_index(axis=1)
 
     return [stats_frame_column_name]

@@ -15,9 +15,9 @@
 Thicket has the following minimum requirements, which must be installed before Thicket
 is run:
 
-#. Python 3 (3.6 - 3.11)
+#. Python 3 (3.11 or newer)
 #. hatchet
-#. pandas >= 1.1
+#. pandas >= 3.0
 #. numpy
 #. matplotlib, and
 #. scipy

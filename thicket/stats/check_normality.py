@@ -51,7 +51,7 @@ def check_normality(thicket, columns=None):
         for column in columns:
             output_column_names.append(column + "_normality")
             for i in range(0, len(df[column])):
-                pvalue = df[column][i].pvalue
+                pvalue = df[column].iloc[i].pvalue
 
                 if pvalue < 0.05:
                     thicket.statsframe.dataframe.loc[
@@ -62,7 +62,7 @@ def check_normality(thicket, columns=None):
                         df.index[i], column + "_normality"
                     ] = "True"
                 else:
-                    thicket.stataframe.dataframe.loc[
+                    thicket.statsframe.dataframe.loc[
                         df.index[i], column + "_normality"
                     ] = pd.NA
                 # check to see if exclusive metric
@@ -82,7 +82,7 @@ def check_normality(thicket, columns=None):
         for idx, column in columns:
             output_column_names.append((idx, column + "_normality"))
             for i in range(0, len(df[(idx, column)])):
-                pvalue = df[(idx, column)][i].pvalue
+                pvalue = df[(idx, column)].iloc[i].pvalue
 
                 if pvalue < 0.05:
                     thicket.statsframe.dataframe.loc[

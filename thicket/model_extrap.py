@@ -320,7 +320,7 @@ class Modeling:
             columns = [
                 col
                 for col in self.tht.statsframe.dataframe
-                if isinstance(self.tht.statsframe.dataframe[col][0], ModelWrapper)
+                if isinstance(self.tht.statsframe.dataframe[col].iloc[0], ModelWrapper)
             ]
 
         # Error checking
@@ -329,7 +329,7 @@ class Modeling:
                 raise ValueError(
                     "column " + c + " is not in the aggregated statistics table."
                 )
-            elif not isinstance(self.tht.statsframe.dataframe[c][0], ModelWrapper):
+            elif not isinstance(self.tht.statsframe.dataframe[c].iloc[0], ModelWrapper):
                 raise TypeError(
                     "column "
                     + c

@@ -154,7 +154,9 @@ class Ensemble:
             # Update index to reflect performance data table index
             if metadata_key != inner_idx:
                 for i in range(len(thickets_cp)):
-                    thickets_cp[i].metadata.reset_index(drop=True, inplace=True)
+                    thickets_cp[i].metadata = thickets_cp[i].metadata.reset_index(
+                        drop=True
+                    )
             if metadata_key is None:
                 for i in range(len(thickets_cp)):
                     thickets_cp[i].metadata.index.set_names(
@@ -163,8 +165,10 @@ class Ensemble:
             else:
                 for i in range(len(thickets_cp)):
                     if metadata_key != inner_idx:
-                        thickets_cp[i].metadata.set_index(metadata_key, inplace=True)
-                    thickets_cp[i].metadata.sort_index(inplace=True)
+                        thickets_cp[i].metadata = thickets_cp[i].metadata.set_index(
+                            metadata_key
+                        )
+                    thickets_cp[i].metadata = thickets_cp[i].metadata.sort_index()
 
             # Create multi-index columns
             for i in range(len(thickets_cp)):
@@ -215,7 +219,9 @@ class Ensemble:
                     thickets_cp[i].metadata_columns_to_perfdata(
                         "new_profiles", drop=True
                     )
-                    thickets_cp[i].dataframe.reset_index(level=inner_idx, inplace=True)
+                    thickets_cp[i].dataframe = thickets_cp[i].dataframe.reset_index(
+                        level=inner_idx
+                    )
                     new_mappings.update(
                         pd.Series(
                             thickets_cp[i]
@@ -225,9 +231,11 @@ class Ensemble:
                             index=thickets_cp[i].dataframe[inner_idx],
                         ).to_dict()
                     )
-                    thickets_cp[i].dataframe.drop(inner_idx, axis=1, inplace=True)
-                    thickets_cp[i].dataframe.set_index(
-                        "new_profiles", append=True, inplace=True
+                    thickets_cp[i].dataframe = thickets_cp[i].dataframe.drop(
+                        inner_idx, axis=1
+                    )
+                    thickets_cp[i].dataframe = thickets_cp[i].dataframe.set_index(
+                        "new_profiles", append=True
                     )
                     thickets_cp[i].dataframe.index.rename(
                         thickets_cp[i].profile_idx_name,
@@ -238,7 +246,9 @@ class Ensemble:
                 for i in range(len(thickets_cp)):
                     if metadata_key not in thickets_cp[i].dataframe.index.names:
                         thickets_cp[i].metadata_columns_to_perfdata(metadata_key)
-                    thickets_cp[i].dataframe.reset_index(level=inner_idx, inplace=True)
+                    thickets_cp[i].dataframe = thickets_cp[i].dataframe.reset_index(
+                        level=inner_idx
+                    )
                     new_mappings.update(
                         pd.Series(
                             thickets_cp[i]
@@ -249,11 +259,13 @@ class Ensemble:
                         ).to_dict()
                     )
                     if inner_idx != metadata_key:
-                        thickets_cp[i].dataframe.drop(inner_idx, axis=1, inplace=True)
-                    thickets_cp[i].dataframe.set_index(
-                        metadata_key, append=True, inplace=True
+                        thickets_cp[i].dataframe = thickets_cp[i].dataframe.drop(
+                            inner_idx, axis=1
+                        )
+                    thickets_cp[i].dataframe = thickets_cp[i].dataframe.set_index(
+                        metadata_key, append=True
                     )
-                    thickets_cp[i].dataframe.sort_index(inplace=True)
+                    thickets_cp[i].dataframe = thickets_cp[i].dataframe.sort_index()
 
             # Create tuple columns
             new_columns = [
@@ -283,16 +295,16 @@ class Ensemble:
             )
 
             # Extract "name" columns to upper level
-            nodes = list(set(combined_th.dataframe.reset_index()["node"]))
-            for node in nodes:
-                combined_th.dataframe.loc[node, "name"] = node.frame["name"]
-            combined_th.dataframe.drop(
+            combined_th.dataframe[("name", "")] = [
+                node.frame["name"]
+                for node in combined_th.dataframe.index.get_level_values("node")
+            ]
+            combined_th.dataframe = combined_th.dataframe.drop(
                 columns=[(headers[i], "name") for i in range(len(headers))],
-                inplace=True,
             )
 
             # Sort DataFrame
-            combined_th.dataframe.sort_index(inplace=True)
+            combined_th.dataframe = combined_th.dataframe.sort_index()
 
             return new_mappings
 
@@ -397,9 +409,9 @@ class Ensemble:
             unify_df = _fill_perfdata(unify_df)
 
         # Sort PerfData
-        unify_df.sort_index(inplace=True)
+        unify_df = unify_df.sort_index()
         # Sort Metadata
-        unify_metadata.sort_index(inplace=True)
+        unify_metadata = unify_metadata.sort_index()
 
         # Remove duplicates in metrics
         unify_inc_metrics = list(set(unify_inc_metrics))

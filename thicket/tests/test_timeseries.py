@@ -3,9 +3,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+import copy
 import re
 
+import caliperreader as cr
 import hatchet as ht
+import numpy as np
+import pytest
 
 import thicket as tt
 
@@ -128,3 +132,39 @@ def test_timeseries_temporal_pattern(mem_power_timeseries):
     # Check if tree output is correct.
     assert bool(re.search("0.000", mem_tree))
     assert bool(re.search("0.013", pow_tree))
+
+
+@pytest.mark.parametrize("level", ["loop.start_iteration", "iteration#lulesh.cycle"])
+def test_timeseries_missing_observations(mem_power_timeseries, level):
+    """Missing observations stay NaN, including before a node's first sample."""
+    reader = cr.CaliperReader()
+    reader.read(mem_power_timeseries)
+    records = []
+    for record in reader.records:
+        record = record.copy()
+        iteration = record.get("loop.start_iteration")
+        if iteration is not None:
+            record[level] = record.pop("loop.start_iteration")
+        if iteration == "40":
+            record["memstat.vmrss"] = "0"
+        records.append(record)
+        if iteration in ("20", "80"):
+            optional = record.copy()
+            optional["path"] = ["main", "optional"]
+            optional["memstat.vmrss"] = "0" if iteration == "20" else "743"
+            records.append(optional)
+    reader.records = records
+    original_records = copy.deepcopy(records)
+
+    th = tt.Thicket.from_timeseries(reader, level=level)
+    nodes = {node.frame["name"]: node for node in th.graph.traverse()}
+    expected_values = {
+        "main": [679, np.nan, np.nan, np.nan, np.nan],
+        "lulesh.cycle": [743, 743, 0, 743, 743],
+        "optional": [np.nan, 0, np.nan, np.nan, 743],
+    }
+    for name, expected in expected_values.items():
+        values = th.dataframe.xs(nodes[name], level="node")["memstat.vmrss"]
+        assert list(values.index) == [0, 20, 40, 60, 80]
+        np.testing.assert_equal(values.to_numpy(), expected)
+    assert reader.records == original_records

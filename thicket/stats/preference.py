@@ -62,14 +62,14 @@ def preference(thicket, columns, comparison_func, *args, test="ttest", **kwargs)
             if t_statistic < -1 * tvalue or t_statistic > tvalue:
                 pref_mean.append(
                     comparison_func(
-                        thicket.statsframe.dataframe[columns[0] + "_mean"][i],
-                        thicket.statsframe.dataframe[columns[1] + "_mean"][i],
+                        thicket.statsframe.dataframe[columns[0] + "_mean"].iloc[i],
+                        thicket.statsframe.dataframe[columns[1] + "_mean"].iloc[i],
                     )
                 )
                 pref_std.append(
                     comparison_func(
-                        thicket.statsframe.dataframe[columns[0] + "_std"][i],
-                        thicket.statsframe.dataframe[columns[1] + "_std"][i],
+                        thicket.statsframe.dataframe[columns[0] + "_std"].iloc[i],
+                        thicket.statsframe.dataframe[columns[1] + "_std"].iloc[i],
                     )
                 )
             else:
@@ -89,14 +89,14 @@ def preference(thicket, columns, comparison_func, *args, test="ttest", **kwargs)
             if t_statistic < -1 * tvalue or t_statistic > tvalue:
                 pref_mean.append(
                     comparison_func(
-                        thicket.statsframe.dataframe[idx_mean[0]][i],
-                        thicket.statsframe.dataframe[idx_mean[1]][i],
+                        thicket.statsframe.dataframe[idx_mean[0]].iloc[i],
+                        thicket.statsframe.dataframe[idx_mean[1]].iloc[i],
                     )
                 )
                 pref_std.append(
                     comparison_func(
-                        thicket.statsframe.dataframe[idx_std[0]][i],
-                        thicket.statsframe.dataframe[idx_std[1]][i],
+                        thicket.statsframe.dataframe[idx_std[0]].iloc[i],
+                        thicket.statsframe.dataframe[idx_std[1]].iloc[i],
                     )
                 )
             else:

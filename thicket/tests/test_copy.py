@@ -57,15 +57,16 @@ def test_copy(rajaperf_seq_O3_1M_cali, intersection, fill_perfdata):
     other.graph.roots[0]._hatchet_nid += 1
     assert self.graph.roots[0]._hatchet_nid == other.graph.roots[0]._hatchet_nid
     assert self.graph.roots[0] is other.graph.roots[0]
+    # Restore the nid: nodes are hashed by nid, and the DataFrame indices hold them
+    other.graph.roots[0]._hatchet_nid -= 1
 
-    # Shallow copy of data
-    node = other.dataframe.index.get_level_values("node")[0]
-    profile = other.dataframe.index.get_level_values(other.profile_idx_name)[0]
-    other.dataframe.loc[(node, profile), "nid"] = -1
-    assert (
-        other.dataframe.loc[(node, profile), "nid"]
-        == self.dataframe.loc[(node, profile), "nid"]
-    )
+    # Data is copied lazily (pandas Copy-on-Write): modifying the copy's data does
+    # not change the original's data
+    nid_col = other.dataframe.columns.get_loc("nid")
+    original_value = self.dataframe.iloc[0, nid_col]
+    other.dataframe.iloc[0, nid_col] = -1
+    assert other.dataframe.iloc[0, nid_col] == -1
+    assert self.dataframe.iloc[0, nid_col] == original_value
     # Deep copy of structure
     assert len(self.dataframe.columns) + len(self.dataframe.index[0]) == len(
         other.dataframe.reset_index().columns

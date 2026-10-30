@@ -102,9 +102,12 @@ def calc_boxplot_statistics(thicket, columns=[], quartiles=[0.25, 0.5, 0.75], **
             else:
                 thicket.statsframe.inc_metrics.extend(list(boxplot_dict.keys()))
 
-            df_box = pd.DataFrame(boxplot_dict)
-            df_box["node"] = thicket.statsframe.dataframe.index.tolist()
-            df_box.set_index("node", inplace=True)
+            df_box = pd.DataFrame(
+                boxplot_dict,
+                index=pd.Index(
+                    thicket.statsframe.dataframe.index.tolist(), name="node"
+                ),
+            )
             thicket.statsframe.dataframe = thicket.statsframe.dataframe.join(df_box)
     # columnar joined thicket object
     else:
@@ -171,9 +174,12 @@ def calc_boxplot_statistics(thicket, columns=[], quartiles=[0.25, 0.5, 0.75], **
             else:
                 thicket.statsframe.inc_metrics.extend(list(create_multi_index.keys()))
 
-            df_box = pd.DataFrame(create_multi_index)
-            df_box["node"] = thicket.statsframe.dataframe.reset_index()["node"].tolist()
-            df_box = df_box.set_index("node")
+            df_box = pd.DataFrame(
+                create_multi_index,
+                index=pd.Index(
+                    thicket.statsframe.dataframe.index.tolist(), name="node"
+                ),
+            )
             thicket.statsframe.dataframe = thicket.statsframe.dataframe.join(df_box)
 
         # sort columns in index

@@ -47,7 +47,7 @@ def check_query(th_x, hnids, query):
     assert len(filt_nodes) == len(match)
     assert all([n.frame in match_frames for n in filt_nodes])
     assert all([n.frame["name"] in match_names for n in filt_nodes])
-    assert sorted(pd.unique(filt_th_df_nodes)) == sorted(pd.unique(filt_nodes))
+    assert sorted(set(filt_th_df_nodes)) == sorted(set(filt_nodes))
     assert sorted(filt_th_df_profiles.unique().to_list()) == sorted(
         th_df_profiles.unique().to_list()
     )
@@ -55,8 +55,8 @@ def check_query(th_x, hnids, query):
     assert len(sframe_nodes) == len(match)
     assert all([n.frame in match_frames for n in sframe_nodes])
     assert all([n.frame["name"] in match_names for n in sframe_nodes])
-    assert all([n in pd.unique(filt_th_df_nodes) for n in sframe_nodes])
-    assert sorted(pd.unique(filt_th_df_nodes)) == sorted(pd.unique(sframe_nodes))
+    assert all([n in set(filt_th_df_nodes) for n in sframe_nodes])
+    assert sorted(set(filt_th_df_nodes)) == sorted(set(sframe_nodes))
 
     check_identity(th_x, filt_th, ["default_metric", "profile_idx_name"])
 

@@ -116,11 +116,11 @@ def _score_delta(thicket, columns, output_column_name, scoring_function):
     mean_columns = th.stats.mean(thicket, columns)
     std_columns = th.stats.std(thicket, columns)
 
-    means_target1 = thicket.statsframe.dataframe[mean_columns[0]]
-    means_target2 = thicket.statsframe.dataframe[mean_columns[1]]
+    means_target1 = thicket.statsframe.dataframe[mean_columns[0]].to_numpy()
+    means_target2 = thicket.statsframe.dataframe[mean_columns[1]].to_numpy()
 
-    stds_target1 = thicket.statsframe.dataframe[std_columns[0]]
-    stds_target2 = thicket.statsframe.dataframe[std_columns[1]]
+    stds_target1 = thicket.statsframe.dataframe[std_columns[0]].to_numpy()
+    stds_target2 = thicket.statsframe.dataframe[std_columns[1]].to_numpy()
 
     # Call the scoring function that the user specified
     resulting_scores = scoring_function(

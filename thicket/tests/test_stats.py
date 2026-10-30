@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import math
+import warnings
 
 import numpy as np
 import pytest
@@ -303,6 +304,45 @@ def test_std_columnar_join(thicket_axis_columns):
     assert (idx, "Min time/rank_std") in combined_th.statsframe.show_metric_columns()
 
 
+def test_aggregation_values(
+    rajaperf_cuda_block128_1M_cali, rajaperf_seq_O3_1M_cali, intersection, fill_perfdata
+):
+    """Check the values of the aggregation functions against NumPy.
+
+    Missing values (e.g., rows added by fill_perfdata) are skipped, and std and
+    variance are sample statistics (ddof=1).
+    """
+    th_ens = th.Thicket.from_caliperreader(
+        rajaperf_cuda_block128_1M_cali[:3] + rajaperf_seq_O3_1M_cali[:3],
+        intersection=intersection,
+        fill_perfdata=fill_perfdata,
+        disable_tqdm=True,
+    )
+    column = "Min time/rank"
+    stats_funcs = {
+        "mean": (th.stats.mean, np.nanmean),
+        "median": (th.stats.median, np.nanmedian),
+        "sum": (th.stats.sum, np.nansum),
+        "max": (th.stats.maximum, np.nanmax),
+        "min": (th.stats.minimum, np.nanmin),
+        "std": (th.stats.std, lambda x: np.nanstd(x, ddof=1)),
+        "var": (th.stats.variance, lambda x: np.nanvar(x, ddof=1)),
+    }
+    for stats_func, _ in stats_funcs.values():
+        stats_func(th_ens, columns=[column])
+
+    for node in th_ens.statsframe.dataframe.index:
+        values = th_ens.dataframe.loc[node, column].to_numpy()
+        for suffix, (_, numpy_func) in stats_funcs.items():
+            with warnings.catch_warnings():
+                # e.g., "Degrees of freedom <= 0" for single values
+                warnings.simplefilter("ignore", RuntimeWarning)
+                expected = numpy_func(values)
+            assert th_ens.statsframe.dataframe.loc[
+                node, f"{column}_{suffix}"
+            ] == pytest.approx(expected, nan_ok=True)
+
+
 def test_percentiles(rajaperf_seq_O3_1M_cali, intersection, fill_perfdata):
     th_ens = th.Thicket.from_caliperreader(
         rajaperf_seq_O3_1M_cali,
@@ -547,7 +587,7 @@ def test_normality(rajaperf_cuda_block128_1M_cali, intersection, fill_perfdata):
 
     th.stats.check_normality(th_ens, columns=["Min time/rank"])
 
-    assert th_ens.statsframe.dataframe["Min time/rank_normality"][0] in {
+    assert th_ens.statsframe.dataframe["Min time/rank_normality"].iloc[0] in {
         "True",
         "False",
     }
@@ -897,11 +937,11 @@ def test_bhattacharyya_distance(thicket_axis_columns):
     mean_columns = th.stats.mean(combined_th_cpy, columns)
     std_columns = th.stats.std(combined_th_cpy, columns)
 
-    means_target1 = combined_th_cpy.statsframe.dataframe[mean_columns[0]]
-    means_target2 = combined_th_cpy.statsframe.dataframe[mean_columns[1]]
+    means_target1 = combined_th_cpy.statsframe.dataframe[mean_columns[0]].to_numpy()
+    means_target2 = combined_th_cpy.statsframe.dataframe[mean_columns[1]].to_numpy()
 
-    stds_target1 = combined_th_cpy.statsframe.dataframe[std_columns[0]]
-    stds_target2 = combined_th_cpy.statsframe.dataframe[std_columns[1]]
+    stds_target1 = combined_th_cpy.statsframe.dataframe[std_columns[0]].to_numpy()
+    stds_target2 = combined_th_cpy.statsframe.dataframe[std_columns[1]].to_numpy()
 
     results = []
 
@@ -997,11 +1037,11 @@ def test_hellinger_distance(thicket_axis_columns):
     mean_columns = th.stats.mean(combined_th_cpy, columns)
     std_columns = th.stats.std(combined_th_cpy, columns)
 
-    means_target1 = combined_th_cpy.statsframe.dataframe[mean_columns[0]]
-    means_target2 = combined_th_cpy.statsframe.dataframe[mean_columns[1]]
+    means_target1 = combined_th_cpy.statsframe.dataframe[mean_columns[0]].to_numpy()
+    means_target2 = combined_th_cpy.statsframe.dataframe[mean_columns[1]].to_numpy()
 
-    stds_target1 = combined_th_cpy.statsframe.dataframe[std_columns[0]]
-    stds_target2 = combined_th_cpy.statsframe.dataframe[std_columns[1]]
+    stds_target1 = combined_th_cpy.statsframe.dataframe[std_columns[0]].to_numpy()
+    stds_target2 = combined_th_cpy.statsframe.dataframe[std_columns[1]].to_numpy()
 
     results = []
 
@@ -1268,10 +1308,10 @@ def test_score_bhattacharyya(thicket_axis_columns):
     )
 
     # NaN, and Inf are not comparable, removed them
-    combined_th_cpy.statsframe.dataframe.replace(
-        [np.inf, -np.inf, np.nan], -1, inplace=True
+    combined_th_cpy.statsframe.dataframe = combined_th_cpy.statsframe.dataframe.replace(
+        [np.inf, -np.inf, np.nan], -1
     )
-    distance_data.replace([np.inf, -np.inf, np.nan], -1, inplace=True)
+    distance_data = distance_data.replace([np.inf, -np.inf, np.nan], -1)
 
     assert (
         combined_th_cpy.statsframe.dataframe[stats_out[0]].tolist()
@@ -1319,10 +1359,10 @@ def test_score_hellinger(thicket_axis_columns):
     )
 
     # NaN, and Inf are not comparable, removed them
-    combined_th_cpy.statsframe.dataframe.replace(
-        [np.inf, -np.inf, np.nan], -1, inplace=True
+    combined_th_cpy.statsframe.dataframe = combined_th_cpy.statsframe.dataframe.replace(
+        [np.inf, -np.inf, np.nan], -1
     )
-    distance_data.replace([np.inf, -np.inf, np.nan], -1, inplace=True)
+    distance_data = distance_data.replace([np.inf, -np.inf, np.nan], -1)
 
     assert (
         combined_th_cpy.statsframe.dataframe[stats_out[0]].tolist()
@@ -1417,4 +1457,4 @@ def test_confidence_interval(thicket_axis_columns):
 
     for col in correct_data.keys():
         for idx, val in enumerate(correct_data[col]):
-            assert combined_th.statsframe.dataframe[col][idx] == val
+            assert combined_th.statsframe.dataframe[col].iloc[idx] == val

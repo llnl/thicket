@@ -97,8 +97,8 @@ def test_concat_thickets_columns(thicket_axis_columns):
 
     # PerfData and StatsFrame nodes should be in the same order.
     assert (
-        pd.unique(combined_th.dataframe.reset_index()["node"].tolist())
-        == pd.unique(combined_th.statsframe.dataframe.reset_index()["node"].tolist())
+        pd.unique(combined_th.dataframe.reset_index()["node"])
+        == pd.unique(combined_th.statsframe.dataframe.reset_index()["node"])
     ).all()
 
 

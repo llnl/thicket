@@ -58,11 +58,11 @@ def __ttest(thicket, columns, alpha=0.05, *args, **kwargs):
         t_statistics = []
         for i in range(0, len(thicket.statsframe.dataframe)):
             tStatistic = ttest_ind_from_stats(
-                mean1=thicket.statsframe.dataframe[mean_columns[0]][i],
-                std1=thicket.statsframe.dataframe[std_columns[0]][i],
+                mean1=thicket.statsframe.dataframe[mean_columns[0]].iloc[i],
+                std1=thicket.statsframe.dataframe[std_columns[0]].iloc[i],
                 nobs1=nobs_column1,
-                mean2=thicket.statsframe.dataframe[mean_columns[1]][i],
-                std2=thicket.statsframe.dataframe[std_columns[1]][i],
+                mean2=thicket.statsframe.dataframe[mean_columns[1]].iloc[i],
+                std2=thicket.statsframe.dataframe[std_columns[1]].iloc[i],
                 nobs2=nobs_column2,
                 equal_var=False,
             )
@@ -96,11 +96,11 @@ def __ttest(thicket, columns, alpha=0.05, *args, **kwargs):
         t_statistics = []
         for i in range(0, len(thicket.statsframe.dataframe)):
             tStatistic = ttest_ind_from_stats(
-                mean1=thicket.statsframe.dataframe[mean_columns[0]][i],
-                std1=thicket.statsframe.dataframe[std_columns[0]][i],
+                mean1=thicket.statsframe.dataframe[mean_columns[0]].iloc[i],
+                std1=thicket.statsframe.dataframe[std_columns[0]].iloc[i],
                 nobs1=nobs_column1,
-                mean2=thicket.statsframe.dataframe[mean_columns[1]][i],
-                std2=thicket.statsframe.dataframe[std_columns[1]][i],
+                mean2=thicket.statsframe.dataframe[mean_columns[1]].iloc[i],
+                std2=thicket.statsframe.dataframe[std_columns[1]].iloc[i],
                 nobs2=nobs_column2,
                 equal_var=False,
             )

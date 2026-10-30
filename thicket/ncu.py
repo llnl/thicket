@@ -138,7 +138,7 @@ def _build_query_from_ncu_trace(kernel_call_trace, debug):
         if is_regex:
             return (
                 lambda row: row["name"]
-                .apply(lambda x: kernel in x if x is not None else False)
+                .apply(lambda x: kernel in x if isinstance(x, str) else False)
                 .all()
             )
         else:

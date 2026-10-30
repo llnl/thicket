@@ -33,7 +33,7 @@ setup(
         "Source Code": "https://github.com/LLNL/thicket",
         "Documentation": "https://thicket.readthedocs.io/",
     },
-    python_requires=">=3.6.1",
+    python_requires=">=3.11",
     packages=[
         "thicket",
         "thicket.stats",
@@ -44,8 +44,11 @@ setup(
     install_requires=[
         "scipy",
         "numpy",
-        "pandas >= 1.1,<3",
-        "llnl-hatchet",
+        "pandas >= 3",
+        # pandas 3 support is on hatchet develop (LLNL/hatchet#185). The 2026.2.0
+        # release itself requires pandas<3, so this floor admits hatchet develop and
+        # later releases while excluding older releases that lack a pandas pin.
+        "llnl-hatchet >= 2026.2.0",
         "tqdm",
         "more-itertools",
     ],

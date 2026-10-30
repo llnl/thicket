@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from ..utils import verify_thicket_structures
 from .stats_utils import cache_stats_op
 
@@ -36,7 +34,7 @@ def mean(thicket, columns=None):
 
     # thicket object without columnar index
     if thicket.dataframe.columns.nlevels == 1:
-        df = thicket.dataframe[columns].reset_index().groupby("node").agg(np.mean)
+        df = thicket.dataframe[columns].reset_index().groupby("node").agg("mean")
         for column in columns:
             output_column_names.append(column + "_mean")
             thicket.statsframe.dataframe[column + "_mean"] = df[column]
@@ -48,9 +46,7 @@ def mean(thicket, columns=None):
                 thicket.statsframe.inc_metrics.append(column + "_mean")
     # columnar joined thicket object
     else:
-        df = (
-            thicket.dataframe[columns].reset_index(level=1).groupby("node").agg(np.mean)
-        )
+        df = thicket.dataframe[columns].reset_index(level=1).groupby("node").agg("mean")
         for idx, column in columns:
             output_column_names.append((idx, column + "_mean"))
             thicket.statsframe.dataframe[(idx, column + "_mean")] = df[(idx, column)]

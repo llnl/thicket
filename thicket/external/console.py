@@ -128,9 +128,9 @@ class ThicketRenderer(ConsoleRenderer):
             metric_series = (dataframe.xs(self.rank, level=1))[self.primary_metric]
         else:
             metric_series = dataframe[self.primary_metric]
-        isfinite_mask = np.isfinite(metric_series.values)
+        isfinite_mask = np.isfinite(metric_series.to_numpy())
         filtered_series = pd.Series(
-            metric_series.values[isfinite_mask], metric_series.index[isfinite_mask]
+            metric_series.to_numpy()[isfinite_mask], metric_series.index[isfinite_mask]
         )
 
         self.max_metric = self.max_value if self.max_value else filtered_series.max()

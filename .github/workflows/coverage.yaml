@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v4
@@ -24,20 +24,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install Python Dependencies for 3.12 and later
-      if: ${{ matrix.python-version >= '3.12' }}
+    - name: Install Python3 Dependencies
       run: |
         python -m pip install --upgrade pip pytest setuptools wheel
-        pip install -r requirements.txt
-        # Optional Dependency for HDF Checkpointing
-        pip install tables
-        python setup.py install
-        python setup.py build_ext --inplace
-        python -m pip list
-
-    - name: Standard Install Python3 Dependencies
-      run: |
-        python -m pip install --upgrade pip pytest
+        # Install hatchet first: pandas 3 support is on its develop branch, and
+        # requirements.txt cannot be resolved against released hatchet versions
+        python -m pip install git+https://github.com/LLNL/hatchet.git@develop
         pip install -r requirements.txt
         # Optional Dependency for HDF Checkpointing
         pip install tables

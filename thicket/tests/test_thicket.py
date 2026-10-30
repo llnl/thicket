@@ -198,9 +198,10 @@ def test_thicketize_graphframe(rajaperf_seq_O3_1M_cali):
     assert ht1.graph == th1.graph
 
     # Check dataframes are equivalent when profile level is dropped
-    th1.dataframe.reset_index(level=th1.profile_idx_name, inplace=True)
-    th1.dataframe.drop(th1.profile_idx_name, axis=1, inplace=True)
-    assert ht1.dataframe.equals(th1.dataframe)
+    th1_df = th1.dataframe.reset_index(level=th1.profile_idx_name).drop(
+        th1.profile_idx_name, axis=1
+    )
+    assert ht1.dataframe.equals(th1_df)
 
 
 def test_unique_metadata_base_cuda(

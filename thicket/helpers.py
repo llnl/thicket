@@ -121,7 +121,7 @@ def _resolve_missing_indicies(th_list):
             if idx not in th.dataframe.index.names:
                 print(f"Resolving '{idx}' in thicket: ({id(th)})")
                 th.dataframe[idx] = 0
-                th.dataframe.set_index(idx, append=True, inplace=True)
+                th.dataframe = th.dataframe.set_index(idx, append=True)
 
 
 def _set_node_ordering(thickets):

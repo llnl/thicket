@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from ..utils import verify_thicket_structures
 from .stats_utils import cache_stats_op
 
@@ -38,7 +36,7 @@ def std(thicket, columns=None):
 
     # thicket object without columnar index
     if thicket.dataframe.columns.nlevels == 1:
-        df = thicket.dataframe[columns].reset_index().groupby("node").agg(np.std)
+        df = thicket.dataframe[columns].reset_index().groupby("node").agg("std")
         for column in columns:
             output_column_names.append(column + "_std")
             thicket.statsframe.dataframe[column + "_std"] = df[column]
@@ -50,7 +48,7 @@ def std(thicket, columns=None):
                 thicket.statsframe.inc_metrics.append(column + "_std")
     # columnar joined thicket object
     else:
-        df = thicket.dataframe[columns].reset_index(level=1).groupby("node").agg(np.std)
+        df = thicket.dataframe[columns].reset_index(level=1).groupby("node").agg("std")
         for idx, column in columns:
             output_column_names.append((idx, column + "_std"))
             thicket.statsframe.dataframe[(idx, column + "_std")] = df[(idx, column)]

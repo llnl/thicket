@@ -482,7 +482,7 @@ def display_violinplot_thicket(
             filtered_dfs[thicket_idx]["node"] = thicket_name
 
     master_df = pd.concat(filtered_dfs, ignore_index=True)
-    master_df.rename(columns={"node": "thicket"}, inplace=True)
+    master_df = master_df.rename(columns={"node": "thicket"})
 
     graph = sns.violinplot(
         data=master_df,

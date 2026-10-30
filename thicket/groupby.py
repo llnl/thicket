@@ -17,7 +17,11 @@ class GroupBy(dict):
         """Aggregate the Thickets' PerfData numerical columns in a GroupBy object.
 
         Arguments:
-            func (function, list or dict): See pandas.DataFrame.aggregate API
+            func (function, str, list or dict): See pandas.DataFrame.aggregate API.
+                Functions are passed to pandas as-is, so NumPy functions keep NumPy
+                semantics (e.g., np.var computes the population variance). Use a
+                pandas aggregation name (e.g., "var" or "std") for pandas semantics.
+                Output columns are named "<column>_<function name or string>".
 
         Returns:
             (Thicket): Aggregated Thicket object.
@@ -50,10 +54,14 @@ class GroupBy(dict):
                 tcols[col] = col + "_" + tname
             return tcols
 
+        def _func_name(f):
+            """Name used in output columns for an aggregation function or name."""
+            return f if isinstance(f, str) else f.__name__
+
         def _agg_rows(col_series):
             """Aggregate values in 'col_series' into a set to remove duplicates."""
-            if len(col_series) <= 1:
-                return col_series
+            if len(col_series) == 1:
+                return col_series.iloc[0]
             else:
                 if isinstance(col_series.iloc[0], list) or isinstance(
                     col_series.iloc[0], set
@@ -154,7 +162,7 @@ class GroupBy(dict):
             cols = list(func.keys())
             # force list structure
             funcs = [[f] if type(f) is not list else f for f in func.values()]
-            snames = [[f.__name__ for f in func] for func in funcs]
+            snames = [[_func_name(f) for f in func] for func in funcs]
             agg_df = _compute_agg_df(snames[0], funcs[0], tk_c, [cols[0]], perf_indices)
             for i in range(1, len(funcs)):
                 t_agg_df = _compute_agg_df(
@@ -166,10 +174,10 @@ class GroupBy(dict):
                 )
         else:
             if isinstance(func, list):
-                snames = [f.__name__ for f in func]
+                snames = [_func_name(f) for f in func]
                 sfuncs = func
             else:  # Assume single value function
-                snames = [func.__name__]
+                snames = [_func_name(func)]
                 sfuncs = [func]
             agg_df = _compute_agg_df(snames, sfuncs, tk_c, agg_cols, perf_indices)
 

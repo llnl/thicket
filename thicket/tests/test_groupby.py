@@ -92,7 +92,11 @@ def test_aggregate(rajaperf_cuda_block128_1M_cali, intersection, fill_perfdata):
 
     epsilon = 0.000001
 
-    def _check_values(_tk_agg):
+    # Variance of "Min time/rank" for the "Algorithm" node over the 10 profiles
+    population_var = 1.825684e-08  # NumPy semantics (ddof=0), e.g., np.var
+    sample_var = 2.0285377777777793e-08  # pandas semantics (ddof=1), e.g., "var"
+
+    def _check_values(_tk_agg, expected_var):
         node = [
             node
             for node in _tk_agg.dataframe.index.get_level_values("node")
@@ -108,21 +112,27 @@ def test_aggregate(rajaperf_cuda_block128_1M_cali, intersection, fill_perfdata):
             for node in _tk_agg.dataframe.index.get_level_values("node")
             if node.frame["name"] == "Algorithm"
         ][0]
-        assert (
-            abs(
-                _tk_agg.dataframe.loc[algorithm_node, 2]["Min time/rank_var"]
-                - 2.0285377777777793e-08
-            )
-            < epsilon
-        )
+        assert _tk_agg.dataframe.loc[algorithm_node, 2][
+            "Min time/rank_var"
+        ] == pytest.approx(expected_var, rel=1e-6)
 
+    # Functions are passed to pandas as-is, so np.var computes the population variance
     tk_agg = gb.agg(
         func={"Min time/rank": [np.mean, np.var], "Total time": np.mean},
         disable_tqdm=True,
     )
-    _check_values(tk_agg)
+    _check_values(tk_agg, population_var)
     tk_agg = gb.agg(func=[np.mean, np.var], disable_tqdm=True)
-    _check_values(tk_agg)
+    _check_values(tk_agg, population_var)
+
+    # pandas aggregation names use pandas semantics and name the columns the same way
+    tk_agg = gb.agg(
+        func={"Min time/rank": ["mean", "var"], "Total time": "mean"},
+        disable_tqdm=True,
+    )
+    _check_values(tk_agg, sample_var)
+    tk_agg = gb.agg(func=["mean", "var"], disable_tqdm=True)
+    _check_values(tk_agg, sample_var)
 
 
 def test_groupby(rajaperf_seq_O3_1M_cali, intersection, fill_perfdata):

@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 from ..utils import verify_thicket_structures
 from .stats_utils import cache_stats_op
 
@@ -39,7 +37,7 @@ def variance(thicket, columns=None):
 
     # thicket object without columnar index
     if thicket.dataframe.columns.nlevels == 1:
-        df = thicket.dataframe[columns].reset_index().groupby("node").agg(np.var)
+        df = thicket.dataframe[columns].reset_index().groupby("node").agg("var")
         for column in columns:
             output_column_names.append(column + "_var")
             thicket.statsframe.dataframe[column + "_var"] = df[column]
@@ -51,7 +49,7 @@ def variance(thicket, columns=None):
                 thicket.statsframe.inc_metrics.append(column + "_var")
     # columnar joined thicket object
     else:
-        df = thicket.dataframe[columns].reset_index(level=1).groupby("node").agg(np.var)
+        df = thicket.dataframe[columns].reset_index(level=1).groupby("node").agg("var")
         for idx, column in columns:
             output_column_names.append((idx, column + "_var"))
             thicket.statsframe.dataframe[(idx, column + "_var")] = df[(idx, column)]
